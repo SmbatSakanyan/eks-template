@@ -1,0 +1,53 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: eks-cluster
+  title: "Provision EKS cluster (COMING SOON)"
+  description: "Scaffolds a Terraform repo that builds an EKS cluster"
+  tags: [aws, eks]
+  lifecycle: experimental
+spec:
+  owner: user:guest # ← updated
+  type: infrastructure
+
+  parameters:
+    - title: Cluster basics
+      required: [clusterName, region]
+      properties:
+        clusterName:
+          type: string
+          description: "DNS‑friendly name, e.g. my‑dev‑cluster"
+        region:
+          type: string
+          default: eu-central-1
+          enum: [eu-central-1, us-east-1, us-west-2]
+
+  steps:
+    - id: fetch-skeleton
+      name: Fetch skeleton repo
+      action: fetch:template
+      input:
+        url: https://github.com/SmbatSakanyan/eks-template.git # ← updated
+
+    - id: publish-gh
+      name: Create GitHub repo
+      action: publish:github
+      input:
+        repoUrl: github.com/your‑org/${{ parameters.clusterName }}
+
+    - id: run-workflow
+      name: Trigger Terraform
+      action: github:actions
+      input:
+        workflowId: terraform.yml
+
+    - id: register
+      name: Register repo
+      action: catalog:register
+      input:
+        repoContentsUrl: ${{ steps['publish-gh'].output.repoContentsUrl }}
+
+  output:
+    links:
+      - title: "GitHub repo"
+        url: ${{ steps['publish-gh'].output.repositoryUrl }}
