@@ -3,51 +3,73 @@ kind: Template
 metadata:
   name: eks-cluster
   title: "Provision EKS cluster (COMING SOON)"
-  description: "Scaffolds a Terraform repo that builds an EKS cluster"
+  description: "Scaffolds a Terraform repo that builds a 1-node EKS cluster"
   tags: [aws, eks]
   lifecycle: experimental
 spec:
-  owner: user:guest # ← updated
+  owner: guest
   type: infrastructure
 
+  ##############################################################
+  # 1 Parameters the user fills in Backstage
+  ##############################################################
   parameters:
-    - title: Cluster basics
+    - title: Cluster details
       required: [clusterName, region]
       properties:
         clusterName:
+          title: Cluster name
           type: string
-          description: "DNS‑friendly name, e.g. my‑dev‑cluster"
+          pattern: "^[a-z0-9-]+$"
+          description: "DNS-friendly name, e.g. demo-eks"
         region:
+          title: AWS region
           type: string
           default: eu-central-1
           enum: [eu-central-1, us-east-1, us-west-2]
 
+  ##############################################################
+  # 2 Steps executed when the user clicks “Run”
+  ##############################################################
   steps:
+    # Copy ONLY the skeleton (not this template.yaml) out of the repo
     - id: fetch-skeleton
       name: Fetch skeleton repo
       action: fetch:template
       input:
-        url: https://github.com/SmbatSakanyan/eks-template.git # ← updated
+        url: https://github.com/SmbatSakanyan/eks-template.git
+        path: ./content # 👈 skeleton lives here
+        values:
+          clusterName: ${{ parameters.clusterName }}
+          region: ${{ parameters.region }}
 
-    - id: publish-gh
+    # Create a new GitHub repo and push the rendered code
+    - id: publish-repo
       name: Create GitHub repo
       action: publish:github
       input:
-        repoUrl: github.com/your‑org/${{ parameters.clusterName }}
+        repoUrl: github.com/your-org/${{ parameters.clusterName }}
+        defaultBranch: main
+        repoVisibility: private
 
-    - id: run-workflow
-      name: Trigger Terraform
-      action: github:actions
-      input:
-        workflowId: terraform.yml
+    # (Optional) trigger a workflow named terraform.yml inside the new repo
+    # - id: trigger-ci
+    #   name: Trigger Terraform workflow
+    #   action: github:actions
+    #   input:
+    #     workflowId: terraform.yml
 
+    # Register the new repo in the Backstage catalog
     - id: register
-      name: Register repo
+      name: Register in catalog
       action: catalog:register
       input:
-        repoContentsUrl: ${{ steps['publish-gh'].output.repoContentsUrl }}
+        repoContentsUrl: ${{ steps['publish-repo'].output.repoContentsUrl }}
 
+  ##############################################################
+  # 3 Links shown to the user after the job finishes
+  ##############################################################
   output:
     links:
-      - title: "GitHub repo"
-        url: ${{ steps['publish-gh'].output.repositoryUrl }}
+      - title: "New repository"
+        url: ${{ steps['publish-repo'].output.repositoryUrl }}

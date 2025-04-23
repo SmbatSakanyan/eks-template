@@ -1,0 +1,5 @@
+{
+    "cluster_name": "{{ parameters.clusterName }}",
+    "region": "{{ parameters.region }}",
+    "k8s_version": "{{ parameters.k8sVersion }}"
+}
