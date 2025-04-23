@@ -48,9 +48,7 @@ spec:
       name: Create GitHub repo
       action: publish:github
       input:
-        repoUrl: github.com/SmbatSakanyan/${{ parameters.clusterName }}
-        defaultBranch: main
-        repoVisibility: public
+        repoUrl: github.com?owner=SmbatSakanyan&repo=${{ parameters.clusterName }}
 
     # (Optional) trigger a workflow named terraform.yml inside the new repo
     # - id: trigger-ci
